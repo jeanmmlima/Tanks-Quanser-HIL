@@ -19,8 +19,11 @@
 
 static const char  board_type[]      = "q8_usb";
 static const char board_identifier[] = "0";
+static t_card board;
+static t_int  result;
 
-bool setup(*char[] btype, *char[] bident, *t_card board);
+bool setup(const char[], const char[], t_card*);
+void fechar(t_card*);
 
 
 int main(int argc, char* argv[])
@@ -28,8 +31,7 @@ int main(int argc, char* argv[])
     
 
     qsigaction_t action;
-	t_card board;
-    t_int  result;
+
 
     /* Prevent Ctrl+C from stopping the application so hil_close gets called */
     action.sa_handler = SIG_IGN;
@@ -58,7 +60,7 @@ int main(int argc, char* argv[])
 			printf("Erro ao ler canais!\n");
 		}
             
-        hil_close(board);
+        fechar(board);
     }
     else
 	{
@@ -71,13 +73,17 @@ int main(int argc, char* argv[])
 	return 0;
 }
 
-bool setup(*char[] btype, *char[] bident, *t_card board){
+bool setup(const char btype[], const char bident[], t_card *board){
 	result = hil_open(btype, bident, &board);
 	if (result == 0){
 		printf("Placa Acessada \n");
 		return true;
 	} else {
 		printf("Não foi possível acessar a placa!\n")
-		return else;
+		return false;
 	}
+}
+
+void fechar(t_card *board){
+	hil_close(board);
 }
