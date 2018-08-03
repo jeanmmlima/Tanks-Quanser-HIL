@@ -21,7 +21,6 @@ int main(int argc, char* argv[])
 {
     static const char  board_type[]      = "q8_usb";
     static const char board_identifier[] = "0";
-    static char        message[512];
 
     qsigaction_t action;
 	t_card board;
