@@ -21,8 +21,13 @@ static const char  board_type[]      = "q8_usb";
 static const char board_identifier[] = "0";
 static t_card board;
 static t_int  result;
+static t_uint32 analog_channels[] = {0, 1};
+#define NUM_ANALOG_CHANNELS ARRAY_LENGTH(analog_channels);
+
+static t_double voltages[NUM_ANALOG_CHANNELS];
 
 bool setup(const char[], const char[], t_card*);
+bool ler(t_card, const t_uint32[], t_double*);
 void fechar(t_card*);
 
 
@@ -42,9 +47,7 @@ int main(int argc, char* argv[])
     if (result == 0)
     {
 		printf("Placa Acessada \n");
-		const t_uint32 analog_channels[] = {0, 1};
-		#define NUM_ANALOG_CHANNELS     ARRAY_LENGTH(analog_channels)
-		t_double  voltages[NUM_ANALOG_CHANNELS];
+		
 
 		result = hil_read_analog(board, analog_channels, NUM_ANALOG_CHANNELS, &voltages[0]);
 
@@ -80,6 +83,17 @@ bool setup(const char btype[], const char bident[], t_card *board){
 		return true;
 	} else {
 		printf("Não foi possível acessar a placa!\n")
+		return false;
+	}
+}
+
+bool ler(t_card placa, const t_uint32[] canais_analogicos, t_double* voltagens){
+	result = hil_analog_read(placa, canais_analogicos, NUM_ANALOG_CHANNELS, &voltagens[0]);
+	if (result == 0){
+		printf("Leitura completa! \n");
+		return true;	
+	} else {
+		printf("Não foi possível ler valores!\n")
 		return false;
 	}
 }
