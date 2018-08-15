@@ -58,6 +58,7 @@ handles.output = hObject;
 % handles.stop = 0;
 handles.readCh = [0, 1];
 handles.writeCh = [0];
+global board;
 global time;
 global stop;
 global x;
@@ -105,6 +106,20 @@ L2 = levels(2);
 function writeVoltage(board,channels,voltage)
 hil_write_analog(board,channels,voltage);
 
+function [erro] = malhaFechada(sp, nivel)
+erro = sp - nivel;
+
+function [ss] = locker(volts)
+if volts > 4
+    ss = 4;
+elseif volts < -4
+    ss = -4;
+else
+    ss = volts;
+end
+
+function [P] = setP(e,Kp)
+P = e * Kp;
 
 function spText_Callback(hObject, eventdata, handles)
 % hObject    handle to spText (see GCBO)
@@ -133,28 +148,44 @@ function sendBtn_Callback(hObject, eventdata, handles)
 % hObject    handle to sendBtn (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+global board;
 global stop;
 global time;
 global x;
 global sp;
 global nivel1;
 global nivel2;
-handles.SP = str2double(get(handles.spText,'String'))
+handles.SP = str2double(get(handles.spText,'String'));
 stop = 0;
-while(time < 1000 && stop == 0)
+while(time < 10000 && stop == 0)
     i = time;
     sp(i) = handles.SP;
     try
-        [nivel1(i),nivel2(i)] = readLevels(handles.board,handles.readCh);
+        [nivel1(i),nivel2(i)] = readLevels(board,handles.readCh);
     catch
         disp('Não foi possível ler!');
     end
+    
+    %%%ACAO DE CONTROLE - MF
+    e = malhaFechada(sp(i),nivel1(i));
+    
+    %P
+    out = setP(e,2);
+    
+    %Trava
+    sinal = locker(out);
+    
+    disp(sinal);
+    writeVoltage(board,handles.writeCh,sinal);
+    
     x(i) = time;
-    p = plot(x,sp,nivel1);grid on;
-    set(p,'LineWidth',2);
+    plot(x,sp,'blue');
+    plot(x,nivel1,'red');
+    plot(x,nivel2,'green');grid on;
     time = time + 1;
     pause(0.01);
 end
+writeVoltage(board,handles.writeCh,0);
 
 
 % --- Executes on button press in stopBtn.
@@ -168,12 +199,14 @@ global x;
 global sp;
 global nivel1;
 global nivel2;
+global board;
 stop = 1;
 time = 1;
 x = 0;
 sp = 0;
 nivel1 = 0;
 nivel2 = 0;
+writeVoltage(board,handles.writeCh,0);
 cla;
 
 
@@ -184,8 +217,9 @@ function conectBtn_Callback(hObject, eventdata, handles)
 % hObject    handle to conectBtn (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+global board;
 try
-   handles.board = connectBoard();
+   board = connectBoard();
    set(handles.statusText,'String','CONNECTED!');
    set(handles.statusText,'ForegroundColor',[0, 0.5, 0]);
 catch
@@ -199,6 +233,7 @@ function disconectBtn_Callback(hObject, eventdata, handles)
 % hObject    handle to disconectBtn (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-disconnectBoard(handles.board);
+global board;
+disconnectBoard(board);
 set(handles.statusText,'String', 'NOT CONNECTED');
 set(handles.statusText,'ForegroundColor','red');
